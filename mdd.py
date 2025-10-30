@@ -10,20 +10,20 @@ import concurrent.futures as conf
 from utils import compute_metrics_for_ticker, read_tickers_from_file
 
 # -------------------------------
-# 설정
+# Configs
 # -------------------------------
 DEFAULT_TICKERS_FILE = "tickers.txt"
-REFRESH_INTERVAL_SEC = 60          # 기본 10초
-ROUND_DIGITS = 2                   # 소수점 둘째자리 반올림
-THEME = "clam"                     # ttk 스타일 (그리드/보더 커스텀에 유리)
-MAX_WORKERS = 8                    # 병렬 워커 수 상한
+REFRESH_INTERVAL_SEC = 60
+ROUND_DIGITS = 2
+THEME = "clam"
+MAX_WORKERS = 8
 ERROR_BG = "#FFEBEE"
 ODD_ROW_BG = "#d0f7dd"
 EVEN_ROW_BG = "#FFFFFF"
 
 
 # -------------------------------
-# Tkinter 앱
+# Tkinter App
 # -------------------------------
 class DrawdownApp(tk.Tk):
     def __init__(self):
@@ -37,8 +37,6 @@ class DrawdownApp(tk.Tk):
         except Exception:
             pass
 
-        # ▶ 보더/그리드 강조 (clam 기준)
-        #   - Treeview 외곽/필드/헤더 보더 색을 검정에 가깝게 설정
         style.configure(
             "Custom.Treeview",
             rowheight=26,
@@ -58,10 +56,9 @@ class DrawdownApp(tk.Tk):
             foreground="#000000"
         )
 
-        # ⚠ 정렬 상태/헤더 라벨을 테이블 생성 전에 정의(중요: 이전 에러 방지)
-        self.sort_state = {}                # {col: asc_bool}
-        self.current_sort_col = None        # 현재 적용된 정렬 컬럼
-        self.current_sort_asc = True        # 현재 적용된 정렬 방향
+        self.sort_state = {}
+        self.current_sort_col = None
+        self.current_sort_asc = True
         self.heading_labels = {
             "ticker": "Ticker",
             "current_price": "Current Price",
@@ -71,19 +68,15 @@ class DrawdownApp(tk.Tk):
             "error": "Error",
         }
 
-        # 상단 컨트롤
         self._build_controls()
 
-        # 테이블
         self._build_table()
 
-        # 상태
         self.tickers_file = DEFAULT_TICKERS_FILE
         self.refresh_sec = REFRESH_INTERVAL_SEC
         self.after_id = None
         self.loading = False
 
-        # 시작
         self.start_refresh_loop()
 
     def _build_controls(self):
@@ -138,7 +131,6 @@ class DrawdownApp(tk.Tk):
         self.tree.tag_configure("oddrow", background=ODD_ROW_BG)
         self.tree.tag_configure("evenrow", background=EVEN_ROW_BG)
 
-        # 외곽 라인/하이라이트
         self.tree.configure(takefocus=True)
         self.tree.configure(selectmode="browse")
         self.tree.configure(cursor="arrow")
@@ -150,7 +142,7 @@ class DrawdownApp(tk.Tk):
     def on_apply(self):
         path = self.entry_file.get().strip()
         if not path:
-            messagebox.showwarning("입력 오류", "Tickers File 경로를 입력하세요.")
+            messagebox.showwarning("Input Error", "Enter path to tickers file ")
             return
         self.tickers_file = path
 
@@ -159,7 +151,7 @@ class DrawdownApp(tk.Tk):
             if sec < 5:
                 raise ValueError
         except Exception:
-            messagebox.showwarning("입력 오류", "Refresh (sec)은 5 이상의 숫자여야 합니다.")
+            messagebox.showwarning("Input Error", "Refresh (sec) must be larger than 5.")
             return
         self.refresh_sec = sec
 
@@ -177,7 +169,6 @@ class DrawdownApp(tk.Tk):
         self.refresh_once()
         self.start_refresh_loop()
 
-    # ----------------- 병렬 수집 -----------------
     def refresh_once(self):
         if self.loading:
             return
@@ -223,7 +214,6 @@ class DrawdownApp(tk.Tk):
 
             def on_main_thread():
                 df = pd.DataFrame(rows)
-                # ✅ 사용자가 정렬 선택했으면 그대로 유지
                 if self.current_sort_col:
                     df = self._apply_sort_to_dataframe(df, self.current_sort_col, self.current_sort_asc)
                 else:
@@ -233,7 +223,6 @@ class DrawdownApp(tk.Tk):
                 df.reset_index(drop=True, inplace=True)
 
                 self._update_tree(df)
-                # 헤더 화살표 갱신
                 self._refresh_heading_arrows()
 
                 now_utc = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
@@ -254,7 +243,6 @@ class DrawdownApp(tk.Tk):
         sort_col = col_map_raw.get(col, col)
         if sort_col not in df.columns:
             return df
-        # NaN은 항상 마지막
         return df.sort_values(
             by=sort_col,
             ascending=asc,
@@ -262,7 +250,6 @@ class DrawdownApp(tk.Tk):
         )
 
     def _update_tree(self, df: pd.DataFrame):
-        # 기존 행 삭제
         for iid in self.tree.get_children():
             self.tree.delete(iid)
 
@@ -299,8 +286,6 @@ class DrawdownApp(tk.Tk):
             self.tree.insert("", tk.END, values=vals, tags=tags)
 
     def _refresh_heading_arrows(self):
-        # 헤더 텍스트(▲/▼) 갱신
-        
         for c, label in self.heading_labels.items():
             if self.current_sort_col and c == self.current_sort_col:
                 arrow = " ▲" if self.current_sort_asc else " ▼"
@@ -326,16 +311,13 @@ class DrawdownApp(tk.Tk):
         except Exception:
             return str(v)
 
-    # ------------- 헤더 클릭 정렬 -------------
     def on_heading_click(self, col: str):
-        # 현재 컬럼 기준 방향 토글
         if self.current_sort_col == col:
             self.current_sort_asc = not self.current_sort_asc
         else:
             self.current_sort_col = col
-            self.current_sort_asc = True  # 새 컬럼 클릭 시 오름차순부터
+            self.current_sort_asc = True
 
-        # 트리 내 데이터 재정렬 (in-place)
         self._sort_tree_in_place(self.current_sort_col, self.current_sort_asc)
         self._refresh_heading_arrows()
 
@@ -389,17 +371,14 @@ class DrawdownApp(tk.Tk):
         except ValueError:
             err_idx = None
 
-        # 태그 사전 등록(보장)
         self.tree.tag_configure("oddrow", background=ODD_ROW_BG)
         self.tree.tag_configure("evenrow", background=EVEN_ROW_BG)
         self.tree.tag_configure("errorbg", background=ERROR_BG)
 
         for i, iid in enumerate(self.tree.get_children("")):
-            # 현재 태그들에서 색 관련 태그만 제거
             old_tags = list(self.tree.item(iid, "tags") or [])
             new_tags = [t for t in old_tags if t not in ("oddrow", "evenrow", "errorbg")]
 
-            # 에러 여부 확인
             has_error = False
             if err_idx is not None:
                 vals = self.tree.item(iid, "values")
@@ -424,7 +403,7 @@ class DrawdownApp(tk.Tk):
             return float("nan")
 
 # -------------------------------
-# 실행
+# Run
 # -------------------------------
 if __name__ == "__main__":
     try:

@@ -6,12 +6,9 @@ import pandas as pd
 import yfinance as yf
 import threading
 
-ROUND_DIGITS = 2                   # 소수점 둘째자리 반올림
-HISTORY_TTL_SEC = 300              # 일봉 히스토리 캐시 TTL (초) - 5분
+from mdd import ROUND_DIGITS
+HISTORY_TTL_SEC = 300
 
-# -------------------------------
-# 유틸: 컨테이너에서 키 안전 추출
-# -------------------------------
 def _get_from_container(container, keys):
     if container is None:
         return None
@@ -35,13 +32,9 @@ def _get_from_container(container, keys):
                 pass
     return None
 
-# -------------------------------
-# 현재가 견고 추출 (ETF/주식 공통)
-# -------------------------------
 def get_current_price_any(ticker: str) -> float:
     t = yf.Ticker(ticker)
 
-    # 1) fast_info
     try:
         fi = t.fast_info
         price = _get_from_container(fi, [
@@ -55,7 +48,6 @@ def get_current_price_any(ticker: str) -> float:
     except Exception:
         pass
 
-    # 2) info
     try:
         info = t.info or {}
         price = _get_from_container(info, [
@@ -70,7 +62,6 @@ def get_current_price_any(ticker: str) -> float:
     except Exception:
         pass
 
-    # 3) 인트라데이
     for period, interval in [("1d", "1m"), ("5d", "5m")]:
         try:
             h = t.history(period=period, interval=interval, auto_adjust=False)
@@ -81,7 +72,6 @@ def get_current_price_any(ticker: str) -> float:
         except Exception:
             continue
 
-    # 4) 일봉 최근 종가
     try:
         h = t.history(period="1mo", interval="1d", auto_adjust=False)
         if not h.empty and "Close" in h:
@@ -93,9 +83,6 @@ def get_current_price_any(ticker: str) -> float:
 
     raise RuntimeError(f"[{ticker}] 현재가를 판별할 수 없습니다.")
 
-# -------------------------------
-# 히스토리 캐시 (+ thread-safe)
-# -------------------------------
 _history_cache: dict[tuple[str, bool], dict] = {}
 _cache_lock = threading.Lock()
 
@@ -115,9 +102,6 @@ def get_history_df(ticker: str, adjusted: bool) -> pd.DataFrame:
         _history_cache[key] = {"df": df, "ts": now}
     return df
 
-# -------------------------------
-# 파일에서 티커 읽기
-# -------------------------------
 def read_tickers_from_file(path: str) -> list[str]:
     if not os.path.exists(path):
         return []
@@ -136,9 +120,6 @@ def read_tickers_from_file(path: str) -> list[str]:
             seen.add(t)
     return uniq
 
-# -------------------------------
-# 메트릭 계산 (한 티커)
-# -------------------------------
 def compute_metrics_for_ticker(ticker: str) -> dict:
     current_price = float(get_current_price_any(ticker))
 
