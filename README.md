@@ -5,6 +5,6 @@ For example, VOO's historical MDD is around -34%. At that value, the recovery ra
 
 To use this tool, add the tickers you would like to analyze to the tickers.txt file. Then run 
 ######
-  python mdd.py
+    python mdd.py
 
 You can set how often the stock price gets updated or refresh instantly.
