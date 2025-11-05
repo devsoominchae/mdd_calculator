@@ -6,8 +6,7 @@ import pandas as pd
 import yfinance as yf
 import threading
 
-from mdd import ROUND_DIGITS
-HISTORY_TTL_SEC = 300
+from vars import *
 
 def _get_from_container(container, keys):
     if container is None:

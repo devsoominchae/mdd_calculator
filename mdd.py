@@ -8,18 +8,8 @@ import threading
 import concurrent.futures as conf
 
 from utils import compute_metrics_for_ticker, read_tickers_from_file
+from vars import *
 
-# -------------------------------
-# Configs
-# -------------------------------
-DEFAULT_TICKERS_FILE = "tickers.txt"
-REFRESH_INTERVAL_SEC = 60
-ROUND_DIGITS = 2
-THEME = "clam"
-MAX_WORKERS = 8
-ERROR_BG = "#FFEBEE"
-ODD_ROW_BG = "#d0f7dd"
-EVEN_ROW_BG = "#FFFFFF"
 
 
 # -------------------------------
